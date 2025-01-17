@@ -1,0 +1,5 @@
+/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/ClassLibrary1/obj/Release/net7.0/ClassLibrary1.csproj.AssemblyReference.cache
+/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/ClassLibrary1/obj/Release/net7.0/ClassLibrary1.GeneratedMSBuildEditorConfig.editorconfig
+/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/ClassLibrary1/obj/Release/net7.0/ClassLibrary1.AssemblyInfoInputs.cache
+/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/ClassLibrary1/obj/Release/net7.0/ClassLibrary1.AssemblyInfo.cs
+/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/ClassLibrary1/obj/Release/net7.0/ClassLibrary1.csproj.CoreCompileInputs.cache

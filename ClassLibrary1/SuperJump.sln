@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1706.4
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperJump", "SuperJump.csproj", "{B2C6E94C-7622-407C-92F3-2ACEBD1EB2CE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B2C6E94C-7622-407C-92F3-2ACEBD1EB2CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C6E94C-7622-407C-92F3-2ACEBD1EB2CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C6E94C-7622-407C-92F3-2ACEBD1EB2CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C6E94C-7622-407C-92F3-2ACEBD1EB2CE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2A5FFC22-44E1-4BA3-BE0F-76D658DE000A}
+	EndGlobalSection
+EndGlobal
