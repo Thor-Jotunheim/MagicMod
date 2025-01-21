@@ -1,28 +1,63 @@
-using System.Collections;
+using HarmonyLib;
 using UnityEngine;
 
 namespace MagicMod
 {
     public class ItemStandInteractions : MonoBehaviour
     {
-        // Coroutine for placing item (takes 3.8 seconds)
-        public IEnumerator PlaceItemCoroutine(ItemStand itemStand, ItemDrop item)
+        // Initialize coroutines or any logic for item stand interactions
+        public void InitializeItemStandInteractions(Harmony harmony)
         {
-            yield return new WaitForSeconds(3.8f);  // Wait for 3.8 seconds before placing the item
+            harmony.PatchAll();
+        }
 
-            // Now perform the placement action
-            itemStand.PlaceItem(item);  // Assuming this is how the item is placed on the stand
-            UnityEngine.Debug.Log("[MagicMod] Item placed on stand.");
+        // Harmony patch for Item Stand placement (placing an item takes 3.8 seconds)
+        [HarmonyPatch(typeof(ItemStand), "Interact")]
+        public class ItemStandInteractPatch
+        {
+            static bool Prefix(ItemStand __instance, Player player, ref bool __result)
+            {
+                // If the item is being placed
+                if (__instance.IsPlacingItem(player)) 
+                {
+                    __instance.StartCoroutine(PlaceItemCoroutine(__instance, player.GetPlacedItem()));
+                    __result = false;
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        // Harmony patch for Item Stand pickup (picking up an item takes 7.5 seconds)
+        [HarmonyPatch(typeof(ItemStand), "Interact")]
+        public class ItemStandPickupPatch
+        {
+            static bool Prefix(ItemStand __instance, Player player, ref bool __result)
+            {
+                if (__instance.IsPickingUpItem(player))
+                {
+                    __instance.StartCoroutine(PickupItemCoroutine(__instance));
+                    __result = false;
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        // Coroutine for placing item (takes 3.8 seconds)
+        private static IEnumerator PlaceItemCoroutine(ItemStand itemStand, ItemDrop item)
+        {
+            yield return new WaitForSeconds(3.8f);
+            itemStand.PlaceItem(item);
+            Debug.Log("[MagicMod] Item placed on stand.");
         }
 
         // Coroutine for picking up item (takes 7.5 seconds)
-        public IEnumerator PickupItemCoroutine(ItemStand itemStand)
+        private static IEnumerator PickupItemCoroutine(ItemStand itemStand)
         {
-            yield return new WaitForSeconds(7.5f);  // Wait for 7.5 seconds before picking the item
-
-            // Now perform the pickup action
-            itemStand.PickUpItem();  // Assuming this is how the item is picked up from the stand
-            UnityEngine.Debug.Log("[MagicMod] Item picked up from stand.");
+            yield return new WaitForSeconds(7.5f);
+            itemStand.PickUpItem();
+            Debug.Log("[MagicMod] Item picked up from stand.");
         }
     }
 }

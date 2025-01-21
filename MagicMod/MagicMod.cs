@@ -3,26 +3,25 @@ using HarmonyLib;
 using UnityEngine;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace MagicMod
 {
     [BepInPlugin("com.MagicMod", "MagicMod", "0.0.1")]
-    [BepInProcess("valheim")] // Updated for macOS
+    [BepInProcess("valheim")]
     public class MagicMod : BaseUnityPlugin
     {
         private readonly Harmony harmony = new Harmony("com.MagicMod");
-
         private readonly string requiredGameVersion = "0.219.16"; // Set the required version here
-        private ItemStandInteractions itemStandInteractions;  // Declare itemStandInteractions here
+        private ItemStandInteractions itemStandInteractions;
 
         void Awake()
         {
             // Initialize the ItemStandInteractions class
             itemStandInteractions = new ItemStandInteractions();
+            itemStandInteractions.InitializeItemStandInteractions(harmony); // Initialize the item stand interactions
 
             // Check the game version before patching
-            string gameVersion = GetGameVersion();  // Get the game version as a string
+            string gameVersion = GetGameVersion();
             Logger.LogInfo($"Detected game version: {gameVersion}");
 
             if (gameVersion != requiredGameVersion)
@@ -94,61 +93,7 @@ namespace MagicMod
                 Logger.LogError($"Error retrieving version from assembly: {ex.Message}");
             }
 
-            // Ensure the method always returns a value, even if no version is found
             return "Unknown";
-        }
-
-        [HarmonyPatch(typeof(Character), nameof(Character.Jump))]
-        class Jump_Patch
-        {
-            static void Prefix(ref float ___m_jumpForce)
-            {
-                UnityEngine.Debug.Log($"[Jump_Patch] Original jump force: {___m_jumpForce}");
-                
-                if (___m_jumpForce == 0)
-                {
-                    UnityEngine.Debug.LogWarning("[Jump_Patch] Jump force is zero, check character state!");
-                }
-
-                ___m_jumpForce = 15; // Modify jump force to 15
-                UnityEngine.Debug.Log($"[Jump_Patch] Modified jump force: {___m_jumpForce}");
-            }
-        }
-
-        // Harmony patch for Item Stand placement (placing an item takes 3.8 seconds)
-        [HarmonyPatch(typeof(ItemStand), "Interact")]
-        public class ItemStandInteractPatch
-        {
-            static bool Prefix(ItemStand __instance, Player player, ref bool __result)
-            {
-                // If the item is being placed
-                if (__instance.GetComponent<ItemStand>().IsPlacingItem(player))
-                {
-                    // Call the coroutine for placing the item
-                    __instance.StartCoroutine(itemStandInteractions.PlaceItemCoroutine(__instance, player.GetPlacedItem()));
-                    __result = false;  // Prevent default interaction logic while waiting
-                    return false;  // Skip the original method
-                }
-                return true;  // Allow original method for other interactions
-            }
-        }
-
-        // Harmony patch for Item Stand pickup (picking up an item takes 7.5 seconds)
-        [HarmonyPatch(typeof(ItemStand), "Interact")]
-        public class ItemStandPickupPatch
-        {
-            static bool Prefix(ItemStand __instance, Player player, ref bool __result)
-            {
-                // If the item is being picked up
-                if (__instance.GetComponent<ItemStand>().IsPickingUpItem(player))
-                {
-                    // Call the coroutine for picking up the item
-                    __instance.StartCoroutine(itemStandInteractions.PickupItemCoroutine(__instance));
-                    __result = false;  // Prevent default interaction logic while waiting
-                    return false;  // Skip the original method
-                }
-                return true;  // Allow original method for other interactions
-            }
         }
     }
 }
