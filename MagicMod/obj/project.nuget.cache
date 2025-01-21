@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "OhHGNvCyuyxlf6CuIezIBsYUG3H+jScJLjr5N5nXLDb6hHsMgfJhhpLaNZ0jlaaX5SrRq3fHI+nkqY8sdP3MIA==",
+  "dgSpecHash": "xvMu0TB9WcCxS2SI+oEv3u1Xarmv5L//TFOGS4sq/zkWy9ywxC9OGOmwoqgvQkkmE3uae8OESYKF1E6w/KUhiQ==",
   "success": true,
-  "projectFilePath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/MagicMod/MagicMod.csproj",
+  "projectFilePath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/MagicMod.csproj",
   "expectedPackageFiles": [
     "/Users/clundervold/.nuget/packages/microsoft.netcore.platforms/1.1.0/microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "/Users/clundervold/.nuget/packages/netstandard.library/2.0.3/netstandard.library.2.0.3.nupkg.sha512"

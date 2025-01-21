@@ -185,11 +185,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/MagicMod/MagicMod.csproj",
+      "projectUniqueName": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/MagicMod.csproj",
       "projectName": "MagicMod",
-      "projectPath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/MagicMod/MagicMod.csproj",
+      "projectPath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/MagicMod.csproj",
       "packagesPath": "/Users/clundervold/.nuget/packages/",
-      "outputPath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/ClassLibrary1/MagicMod/obj/",
+      "outputPath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/clundervold/.nuget/NuGet/NuGet.Config"
