@@ -2,9 +2,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build MagicMod (Windows)",
+            "label": "Build and Copy MagicMod (Windows)",
             "type": "shell",
-            "command": "dotnet build \"C:/Users/CalLu/OneDrive/Documents/Jotunheim/Mod Dev/MagicMod/MagicMod.csproj\"",
+            "command": "dotnet build \"C:/Users/CalLu/OneDrive/Documents/Jotunheim/Mod Dev/MagicMod/MagicMod/MagicMod.csproj\" && cp \"C:/Users/CalLu/OneDrive/Documents/Jotunheim/Mod Dev/MagicMod/MagicMod/bin/Debug/netstandard2.0/MagicMod.dll\" \"C:/Program Files (x86)/Steam/steamapps/common/Valheim/BepInEx/plugins\"",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -12,32 +12,11 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Copy MagicMod DLL (Windows)",
+            "label": "Build and Copy MagicMod (macOS)",
             "type": "shell",
-            "command": "cp \"C:/Users/CalLu/OneDrive/Documents/Jotunheim/Mod Dev/MagicMod/MagicMod/bin/Debug/netstandard2.0/MagicMod.dll\" \"C:/Program Files (x86)/Steam/steamapps/common/Valheim/BepInEx/plugins\"",
+            "command": "dotnet build \"/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/MagicMod.csproj\" && cp \"/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/bin/Debug/netstandard2.0/MagicMod.dll\" \"$HOME/Library/Application Support/Steam/steamapps/common/Valheim/BepInEx/plugins/\"",
             "group": "build",
-            "dependsOn": [
-                "Build MagicMod (Windows)"
-            ]
-        },
-        {
-            "label": "Build MagicMod (macOS)",
-            "type": "shell",
-            "command": "dotnet build \"/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod.csproj\"",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
             "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Copy MagicMod DLL (macOS)",
-            "type": "shell",
-            "command": "cp \"/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod/bin/Debug/netstandard2.0/MagicMod.dll\" \"$HOME/Library/Application Support/Steam/steamapps/common/Valheim/BepInEx/plugins/\"",
-            "group": "build",
-            "dependsOn": [
-                "Build MagicMod (macOS)"
-            ]
         }
     ]
 }
