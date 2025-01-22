@@ -1,85 +1,124 @@
 using HarmonyLib;
 using UnityEngine;
 using System.Collections;
-using System.Reflection;
 using System.Collections.Generic;
 
 namespace MagicMod
 {
     /*
       -----------------------------------------------------------
-      PATCH #1: Patch "CanAttach" so:
-        - If item is $item_dragonegg, return true (no "You can't use X" message)
-        - Otherwise, return false silently, so no error message displays.
+      PATCH #1: Suppress "You can't use X" messages via Humanoid patches.
+                We patch all known Humanoid.Message(...) overloads.
       -----------------------------------------------------------
     */
-    [HarmonyPatch(typeof(ItemStand), "CanAttach", new[] { typeof(ItemDrop.ItemData) })]
-    public static class ItemStand_CanAttach_Patch
+    public static class HumanoidMessagePatches
     {
+        // Overload #1: (MessageHud.MessageType type, string msg)
+        [HarmonyPatch(typeof(Humanoid), "Message", 
+            new System.Type[] { typeof(MessageHud.MessageType), typeof(string) })]
         [HarmonyPrefix]
-        public static bool CanAttach_Prefix(ItemDrop.ItemData item, ref bool __result)
+        public static bool Message_Overload0_Prefix(MessageHud.MessageType type, string msg)
         {
-            if (item == null || item.m_shared == null)
-            {
-                __result = false;
-                return false; // skip original logic
-            }
+            return ShouldAllowMessage(msg);
+        }
 
-            // Only allow the DragonEgg
-            if (item.m_shared.m_name == "$item_dragonegg")
-            {
-                // We allow it
-                __result = true;
-            }
-            else
-            {
-                // Silently block all other items (no message)
-                __result = false;
-            }
+        // Overload #2: (MessageHud.MessageType type, string msg, float time, Sprite icon)
+        [HarmonyPatch(typeof(Humanoid), "Message",
+            new System.Type[] { typeof(MessageHud.MessageType), typeof(string), typeof(float), typeof(Sprite) })]
+        [HarmonyPrefix]
+        public static bool Message_Overload1_Prefix(MessageHud.MessageType type, string msg, float time, Sprite icon)
+        {
+            return ShouldAllowMessage(msg);
+        }
 
-            return false; // skip the original method entirely
+        // Overload #3: (MessageHud.MessageType type, string msg, int amount, Sprite icon)
+        [HarmonyPatch(typeof(Humanoid), "Message",
+            new System.Type[] { typeof(MessageHud.MessageType), typeof(string), typeof(int), typeof(Sprite) })]
+        [HarmonyPrefix]
+        public static bool Message_Overload2_Prefix(MessageHud.MessageType type, string msg, int amount, Sprite icon)
+        {
+            return ShouldAllowMessage(msg);
+        }
+
+        private static bool ShouldAllowMessage(string msg)
+        {
+            if (string.IsNullOrEmpty(msg)) return true;
+
+            // If the message references "DragonEgg" or "cantattach", skip it entirely
+            if (msg.Contains("DragonEgg") || msg.Contains("$piece_itemstand_cantattach"))
+            {
+                DebugLogger.LogMessage($"[MagicMod] Suppressed message: \"{msg}\"");
+                return false; // message suppressed
+            }
+            return true;
         }
     }
 
     /*
       -----------------------------------------------------------
-      PATCH #2: Override "UseItem" so we:
-        - require a 3.8s hotbar hold to place the Egg
-        - start a 45s bomb timer for all players in 150m
+      PATCH #2: Force ItemStand to treat $item_dragonegg as a supported item,
+                so the game doesn't force remove it behind our backs.
+      -----------------------------------------------------------
+    */
+    [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.IsUnsupported), new System.Type[] { typeof(ItemDrop.ItemData) })]
+    public static class ItemStand_IsUnsupported_Patch
+    {
+        [HarmonyPrefix]
+        public static bool IsUnsupported_Prefix(ItemDrop.ItemData item, ref bool __result)
+        {
+            // If it's the DragonEgg, always say "not unsupported" => false
+            if (item != null && item.m_shared != null && item.m_shared.m_name == "$item_dragonegg")
+            {
+                __result = false;
+                return false; // skip original method
+            }
+            return true; // run the game’s normal code for other items
+        }
+    }
+
+    [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.IsSupported), new System.Type[] { typeof(ItemDrop.ItemData) })]
+    public static class ItemStand_IsSupported_Patch
+    {
+        [HarmonyPrefix]
+        public static bool IsSupported_Prefix(ItemDrop.ItemData item, ref bool __result)
+        {
+            // If it's the DragonEgg, always say "yes, it's supported"
+            if (item != null && item.m_shared != null && item.m_shared.m_name == "$item_dragonegg")
+            {
+                __result = true;
+                return false; // skip original method
+            }
+            return true; // run normal for other items
+        }
+    }
+
+    /*
+      -----------------------------------------------------------
+      PATCH #3: UseItem => 3.8s hotbar hold to place Egg + start bomb countdown
       -----------------------------------------------------------
     */
     [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.UseItem))]
     public static class ItemStand_UseItem_Patch
     {
-        private static bool isInDelayedUse = false; // Are we in the 3.8s hold?
-        private static bool ignorePrefix = false;   // Skip our patch if we're invoking UseItem ourselves
+        private static bool isInDelayedUse = false;
+        private static bool ignorePrefix = false;
         private static Coroutine currentCoroutine = null;
 
-        // Bomb logic
-        private static bool bombIsActive = false;   // Has the bomb been planted and not yet exploded/defused?
+        private static bool bombIsActive = false;
         private static Coroutine bombCoroutine = null;
 
         [HarmonyPrefix]
         public static bool UseItem_Prefix(ItemStand __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
         {
-            // If we are calling the real UseItem from reflection, let vanilla run
             if (ignorePrefix) return true;
-
-            // If item==null => removing/unmounting
-            // Let the Interact patch handle the 10s defuse logic
             if (item == null) return true;
-
-            // If there's already an item => skip
             if (__instance.HaveAttachment()) return true;
-
-            // If the item isn't the DragonEgg, we block quietly
             if (item.m_shared.m_name != "$item_dragonegg")
             {
                 __result = false;
                 return false;
             }
 
-            // Check if the user is holding a hotbar key
             bool isKeyHeld = HotbarHelper.IsHotbarKeyHeld();
             if (!isKeyHeld)
             {
@@ -87,7 +126,6 @@ namespace MagicMod
                 return false;
             }
 
-            // If we’re already placing, skip
             if (isInDelayedUse)
             {
                 DebugLogger.LogMessage("[MagicMod] ⚠️ Already placing an item, skipping.");
@@ -95,19 +133,15 @@ namespace MagicMod
                 return false;
             }
 
-            // Begin the 3.8s placement countdown
             isInDelayedUse = true;
-            DebugLogger.LogMessage($"[MagicMod] Hotbar key held: {isKeyHeld}");
             DebugLogger.LogMessage($"[MagicMod] ⏳ Starting placement countdown for: {item.m_shared?.m_name}");
 
-            // Stop any old coroutine
             if (currentCoroutine != null)
             {
                 CoroutineHandler.Instance.StopCoroutine(currentCoroutine);
             }
             currentCoroutine = CoroutineHandler.Instance.StartCoroutine(DelayedPlant(__instance, user, item));
 
-            // Block vanilla for now
             __result = false;
             return false;
         }
@@ -117,12 +151,10 @@ namespace MagicMod
             float holdTime = 3.8f;
             float elapsed = 0f;
 
-            // Show the 3.8s "placing" timer
             ItemStandTimer.ShowPlacementTimer();
 
             while (elapsed < holdTime)
             {
-                // If user lets go of the hotbar key, cancel
                 if (HotbarHelper.WasHotbarKeyReleased())
                 {
                     DebugLogger.LogMessage("[MagicMod] ❌ Plant canceled! Key released early.");
@@ -136,27 +168,23 @@ namespace MagicMod
                 yield return null;
             }
 
-            // Done planting
             DebugLogger.LogMessage($"[MagicMod] ✅ Egg planted: {item.m_shared?.m_name}");
             ItemStandTimer.HidePlacementTimer();
             isInDelayedUse = false;
 
-            // Let vanilla place the Egg
             ignorePrefix = true;
             try
             {
-                MethodInfo originalUseItem = AccessTools.Method(typeof(ItemStand), nameof(ItemStand.UseItem));
-                if (originalUseItem != null)
-                {
-                    originalUseItem.Invoke(stand, new object[] { user, item });
-                }
+                var originalUseItem = AccessTools.Method(typeof(ItemStand), nameof(ItemStand.UseItem));
+                originalUseItem?.Invoke(stand, new object[] { user, item });
             }
             finally
             {
                 ignorePrefix = false;
             }
 
-            // Start the bomb timer
+            yield return new WaitForSeconds(0.1f);
+
             if (!bombIsActive)
             {
                 bombIsActive = true;
@@ -164,33 +192,52 @@ namespace MagicMod
             }
         }
 
-        /// <summary>
-        /// Called after the Egg is successfully placed.
-        /// We broadcast "The bomb has been planted" & show a shared 45s countdown UI
-        /// to every local player within 150m. If it reaches 0 and Egg is still on stand => "Terrorists Win".
-        /// </summary>
         private static IEnumerator BombCountdown(ItemStand stand, float totalTime)
         {
-            BroadcastMessageToNearbyPlayers(stand.transform.position, 150f, "The bomb has been planted!");
-            List<Player> inRangePlayers = GetNearbyPlayers(stand.transform.position, 150f);
+            DebugLogger.LogMessage($"[MagicMod] BombCountdown started, totalTime={totalTime}");
 
-            // Each local player in range gets a 45s UI
-            foreach (Player p in inRangePlayers)
+            EventZone.BroadcastToZonePlayers("The bomb has been planted!");
+            List<Player> zonePlayers = EventZone.GetPlayersInZone();
+
+            DebugLogger.LogMessage($"[MagicMod] zonePlayers count = {zonePlayers.Count}");
+
+            foreach (Player p in zonePlayers)
             {
+                DebugLogger.LogMessage($"[MagicMod] Notifying player: {p.GetPlayerName()}");
                 if (p == Player.m_localPlayer)
                 {
+                    DebugLogger.LogMessage("[MagicMod] => ShowBombTimer(45)");
                     BombTimerUI.ShowBombTimer(totalTime);
                 }
             }
 
             float remaining = totalTime;
-            while (remaining > 0f && stand.HaveAttachment())
+            while (remaining > 0f)
             {
                 yield return new WaitForSeconds(1f);
                 remaining--;
 
-                // Update each local player's UI
-                foreach (Player p in inRangePlayers)
+                string attachedItem = stand.GetAttachedItem();
+                DebugLogger.LogMessage($"[MagicMod] Bomb tick => remaining={remaining}, attachedItem={attachedItem}");
+
+                // 🚀 **Fix: Properly check if the item is still on the stand**
+                if (string.IsNullOrEmpty(attachedItem))
+                {
+                    DebugLogger.LogMessage("[MagicMod] Bomb defused! Countdown stopped.");
+                    
+                    // Hide the UI properly when defused
+                    foreach (Player p in zonePlayers)
+                    {
+                        if (p == Player.m_localPlayer)
+                        {
+                            BombTimerUI.HideBombTimer();
+                        }
+                    }
+                    bombIsActive = false;
+                    yield break;
+                }
+
+                foreach (Player p in zonePlayers)
                 {
                     if (p == Player.m_localPlayer)
                     {
@@ -199,59 +246,19 @@ namespace MagicMod
                 }
             }
 
-            // Hide the UI
-            foreach (Player p in inRangePlayers)
-            {
-                if (p == Player.m_localPlayer)
-                {
-                    BombTimerUI.HideBombTimer();
-                }
-            }
-
-            // If the Egg is still there => "Terrorists Win"
-            if (stand.HaveAttachment())
-            {
-                BroadcastMessageToNearbyPlayers(stand.transform.position, 150f, "Terrorists Win!");
-            }
+            DebugLogger.LogMessage("[MagicMod] Bomb exploded => Terrorists Win");
+            EventZone.BroadcastToZonePlayers("Terrorists Win!");
 
             bombCoroutine = null;
             bombIsActive = false;
-        }
-
-        private static void BroadcastMessageToNearbyPlayers(Vector3 center, float radius, string msg)
-        {
-            var allPlayers = Player.GetAllPlayers();
-            foreach (var p in allPlayers)
-            {
-                float distance = Vector3.Distance(p.transform.position, center);
-                if (distance <= radius)
-                {
-                    p.Message(MessageHud.MessageType.Center, msg);
-                }
-            }
-        }
-
-        private static List<Player> GetNearbyPlayers(Vector3 center, float radius)
-        {
-            var results = new List<Player>();
-            var allPlayers = Player.GetAllPlayers();
-            foreach (var p in allPlayers)
-            {
-                float distance = Vector3.Distance(p.transform.position, center);
-                if (distance <= radius)
-                {
-                    results.Add(p);
-                }
-            }
-            return results;
         }
     }
 
     /*
       -----------------------------------------------------------
-      PATCH #3: Interact => 10s hold to remove the DragonEgg.
+      PATCH #4: Interact => 10s hold to remove the DragonEgg.
                 If removed => "Counter-Terrorist Win."
-                If user is attacked or lets go of E => canceled.
+                If attacked or user stops holding => canceled.
       -----------------------------------------------------------
     */
     [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.Interact))]
@@ -259,14 +266,12 @@ namespace MagicMod
     {
         private static bool isRemoving = false;
         private static Coroutine removeCoroutine = null;
-
-        // Track the last time we saw "Interact" with hold==true
         private static float lastInteractTime = 0f;
 
         [HarmonyPrefix]
         public static bool Interact_Prefix(ItemStand __instance, Humanoid user, bool hold, bool alt, ref bool __result)
         {
-            // If there's no item or can't be removed => run vanilla
+            // If no item or can't remove => vanilla
             if (!__instance.HaveAttachment() || !__instance.m_canBeRemoved)
             {
                 return true;
@@ -279,14 +284,14 @@ namespace MagicMod
                 return true;
             }
 
-            // If user just tapped E, block immediate removal
+            // If user tapped E => block immediate removal
             if (!hold)
             {
                 __result = false;
                 return false;
             }
 
-            // If we’re already removing, just update lastInteractTime
+            // If we’re already removing, refresh lastInteractTime
             if (isRemoving)
             {
                 lastInteractTime = Time.time;
@@ -319,43 +324,37 @@ namespace MagicMod
                 BombTimerUI.ShowDefuseTimer(removeTime);
             }
 
-            // Subscribe to the player's damage event so if they're hit, we cancel
             bool gotHit = false;
-
-            // NOTICE the signature now has (float dmg, Character attacker)
             System.Action<float, Character> onDamaged = (float dmg, Character attacker) =>
             {
-                gotHit = true; // we’ll break out
+                gotHit = true;
             };
 
-            // Hook into the player's "OnDamaged" if we can
             if (player != null)
             {
-                // Unsubscribe first to avoid duplicates, then subscribe
-                player.m_onDamaged -= onDamaged; 
+                player.m_onDamaged -= onDamaged;
                 player.m_onDamaged += onDamaged;
             }
 
             while (elapsed < removeTime)
             {
-                yield return null; // check every frame
+                yield return null;
 
-                // Check if stand or item is missing => canceled
+                // If stand or item is missing => canceled
                 if (!stand || !stand.HaveAttachment())
                 {
                     CancelDefuseUI(player, onDamaged);
                     yield break;
                 }
 
-                // If the user has let go of E => the game won't call Interact with hold==true
-                // for a new frame, so if Time.time - lastInteractTime > ~0.2f => user let go
+                // If user let go => no new Interact(hold==true) => time since last >= 0.2
                 if (Time.time - lastInteractTime > 0.2f)
                 {
                     CancelDefuseUI(player, onDamaged);
                     yield break;
                 }
 
-                // If the user got attacked, cancel
+                // If got hit => canceled
                 if (gotHit)
                 {
                     DebugLogger.LogMessage("[MagicMod] ❌ Defuse canceled! Player got hit.");
@@ -365,20 +364,20 @@ namespace MagicMod
 
                 elapsed += Time.deltaTime;
 
-                // Update UI for local defuser
                 if (player && player == Player.m_localPlayer)
                 {
                     BombTimerUI.UpdateDefuseTimer(removeTime - elapsed);
                 }
             }
 
-            // Completed the defuse
+            // Done defusing
             CancelDefuseUI(player, onDamaged);
 
-            // Broadcast message
-            BroadcastMessageToNearbyPlayers(stand.transform.position, 150f, "Counter-Terrorist Win");
+            // "Counter-Terrorist Win"
+            DebugLogger.LogMessage("[MagicMod] => Counter-Terrorist Win (egg removed)");
+            EventZone.BroadcastToZonePlayers("Counter-Terrorist Win");
 
-            // Actually remove egg by calling "DropItem"
+            // Actually remove egg
             var nviewField = AccessTools.Field(typeof(ItemStand), "m_nview");
             var nview = nviewField.GetValue(stand) as ZNetView;
             nview?.InvokeRPC("DropItem", (long)0);
@@ -395,24 +394,10 @@ namespace MagicMod
 
             if (player != null)
             {
-                // Unsubscribe from damage event
                 player.m_onDamaged -= onDamaged;
             }
 
             isRemoving = false;
-        }
-
-        private static void BroadcastMessageToNearbyPlayers(Vector3 center, float radius, string msg)
-        {
-            var allPlayers = Player.GetAllPlayers();
-            foreach (var p in allPlayers)
-            {
-                float distance = Vector3.Distance(p.transform.position, center);
-                if (distance <= radius)
-                {
-                    p.Message(MessageHud.MessageType.Center, msg);
-                }
-            }
         }
     }
 }

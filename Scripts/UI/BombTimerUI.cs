@@ -74,7 +74,7 @@ namespace MagicMod
             rt.sizeDelta = new Vector2(300, 50);
             rt.anchoredPosition = new Vector2(0, 200);
 
-            // Text
+            // Bomb text
             var textObj = new GameObject("BombText");
             textObj.transform.SetParent(bombPanel.transform, false);
             bombText = textObj.AddComponent<Text>();
@@ -109,7 +109,7 @@ namespace MagicMod
             rt.sizeDelta = new Vector2(300, 50);
             rt.anchoredPosition = new Vector2(0, 150);
 
-            // Text
+            // Defuse text
             var textObj = new GameObject("DefuseText");
             textObj.transform.SetParent(defusePanel.transform, false);
             defuseText = textObj.AddComponent<Text>();
