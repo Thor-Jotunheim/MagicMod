@@ -31,6 +31,11 @@ namespace MagicMod
 
             Logger.LogInfo($"Correct game version detected: {gameVersion}");
 
+            // input manager
+            GameObject inputManagerObj = new GameObject("InputManager");
+            inputManagerObj.AddComponent<InputManager>();  // ✅ Attach InputManager to a GameObject
+            DontDestroyOnLoad(inputManagerObj);  // ✅ Keeps it persistent
+
             // Apply all Harmony patches (logs all patched methods)
             harmony.PatchAll();
 
