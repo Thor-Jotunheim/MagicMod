@@ -5,73 +5,124 @@ using System.Reflection;
 
 namespace MagicMod
 {
-    [HarmonyPatch(typeof(ItemStand), "SetVisualItem")]
-    public static class ItemStandPatch
-    {
-        private static bool isPlacingItem = false;
-        private static bool ignorePrefix = false;
-        private static Coroutine currentPlacementCoroutine = null;
+    /// <summary>
+    /// This patch covers two things:
+    /// 1) Forces "CanAttach" to always return true, so you don't get the "You cannot use X on Item Stand" error.
+    /// 2) Delays "UseItem" by 3.8s, requiring you to hold a hotbar key to place items (no "E" key needed).
+    /// </summary>
 
+    // --------------------------------------------------
+    //  PATCH #1: Always allow attaching the item
+    //            (bypasses "Can't attach" checks).
+    // --------------------------------------------------
+    [HarmonyPatch(typeof(ItemStand), "CanAttach", new[] { typeof(ItemDrop.ItemData) })]
+    public static class ItemStand_CanAttach_Patch
+    {
         [HarmonyPrefix]
-        public static bool BeforeSetVisualItem(ItemStand __instance, ref string itemName, int variant, int quality)
+        public static bool CanAttach_Prefix(ref bool __result)
         {
-            // If we're ignoring the prefix (i.e. calling this from PlaceItem), let the original run
+            // Always allow. This prevents "You cannot use X on Item Stand."
+            __result = true;
+            return false; // Skip the original logic
+        }
+    }
+
+    // --------------------------------------------------
+    //  PATCH #2: Delay "UseItem" so it doesn't mount
+    //            instantly. Requires holding hotbar key
+    //            for 3.8 seconds.
+    // --------------------------------------------------
+    [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.UseItem))]
+    public static class ItemStand_UseItem_Patch
+    {
+        // If we're in the middle of a delayed usage
+        private static bool isInDelayedUse = false;
+
+        // If we call the original ourselves, we need to ignore our prefix once
+        private static bool ignorePrefix = false;
+
+        // Track the running coroutine
+        private static Coroutine currentCoroutine = null;
+
+        /// <summary>
+        /// Prefix on "ItemStand.UseItem"
+        /// Returns FALSE to block vanilla instantly. Then we do a coroutine
+        /// that waits 3.8s of holding the hotbar key. After that, we manually
+        /// call the real UseItem with "ignorePrefix" so we don’t re-block.
+        /// </summary>
+        [HarmonyPrefix]
+        public static bool UseItem_Prefix(ItemStand __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
+        {
+            // If we're the ones calling UseItem via reflection, allow vanilla.
             if (ignorePrefix) return true;
 
-            // If the game calls SetVisualItem with an empty name or if logging is off, let the original run
-            if (!DebugLogger.IsDebugEnabled || string.IsNullOrEmpty(itemName)) return true;
+            // If the stand already has an item and the user is trying to remove it (item==null),
+            // or the user is trying to do something else, let vanilla handle it.
+            // But: The user might want to remove an item that is already on the stand.
+            // The game passes "UseItem" with item==null to remove. If item==null, let vanilla do it.
+            if (item == null)
+            {
+                return true;
+            }
 
-            // Check if the hotbar key is held
+            // Check if a hotbar key is currently held.
             bool isKeyHeld = HotbarHelper.IsHotbarKeyHeld();
-
-            // If the key is NOT held, just block it quietly (no spammy log)
             if (!isKeyHeld)
             {
-                // Return false to block immediate placement
+                // Quietly block usage (don’t place instantly).
+                __result = false;
                 return false;
             }
 
-            // Otherwise, now we log because the user is actively trying to place something
-            DebugLogger.LogMessage($"[MagicMod] Hotbar key held: {isKeyHeld}");
-            DebugLogger.LogMessage($"[MagicMod] 🔹 Attempting to place item: {itemName}");
-
-            // Prevent multiple placement attempts
-            if (isPlacingItem)
+            // If we're already in the middle of a delayed usage, skip starting another
+            if (isInDelayedUse)
             {
                 DebugLogger.LogMessage("[MagicMod] ⚠️ Already placing an item, skipping.");
+                __result = false;
                 return false;
             }
 
-            // Flag that we're starting our delayed placement process
-            isPlacingItem = true;
+            // Begin the delayed usage process
+            isInDelayedUse = true;
+            DebugLogger.LogMessage($"[MagicMod] Hotbar key held: {isKeyHeld}");
+            DebugLogger.LogMessage($"[MagicMod] ⏳ Starting placement countdown for: {item.m_shared?.m_name}");
 
-            // Ensure only one coroutine is running
-            if (currentPlacementCoroutine != null)
+            // Stop any previous coroutine, just in case
+            if (currentCoroutine != null)
             {
-                CoroutineHandler.Instance.StopCoroutine(currentPlacementCoroutine);
+                CoroutineHandler.Instance.StopCoroutine(currentCoroutine);
             }
-            currentPlacementCoroutine = CoroutineHandler.Instance.StartCoroutine(DelayedPlacement(__instance, itemName, variant, quality));
 
-            // Skip the original call for now
+            // Launch the coroutine that waits for 3.8 seconds of holding
+            currentCoroutine = CoroutineHandler.Instance.StartCoroutine(
+                DelayedUseItem(__instance, user, item)
+            );
+
+            // Return false to block the normal usage right now
+            __result = false;
             return false;
         }
 
-        private static IEnumerator DelayedPlacement(ItemStand itemStand, string itemName, int variant, int quality)
+        /// <summary>
+        /// The coroutine that waits 3.8s. If the user is still holding
+        /// the hotbar key at the end, we call the real UseItem.
+        /// </summary>
+        private static IEnumerator DelayedUseItem(ItemStand stand, Humanoid user, ItemDrop.ItemData item)
         {
             float holdTime = 3.8f;
             float elapsedTime = 0f;
 
-            DebugLogger.LogMessage("[MagicMod] ⏳ Placement countdown started...");
+            // Show the timer UI
             ItemStandTimer.ShowPlacementTimer();
 
             while (elapsedTime < holdTime)
             {
-                // If the user releases the key early, cancel
+                // If the hotbar key is released early, cancel
                 if (HotbarHelper.WasHotbarKeyReleased())
                 {
                     DebugLogger.LogMessage("[MagicMod] ❌ Placement canceled! Key released early.");
                     ItemStandTimer.HidePlacementTimer();
-                    isPlacingItem = false;
+                    isInDelayedUse = false;
                     yield break;
                 }
 
@@ -80,34 +131,26 @@ namespace MagicMod
                 yield return null;
             }
 
-            DebugLogger.LogMessage($"[MagicMod] ✅ Timer finished! Placing item: {itemName}");
+            // Time’s up, place the item
+            DebugLogger.LogMessage($"[MagicMod] ✅ Timer finished! Placing item: {item.m_shared?.m_name}");
+            ItemStandTimer.HidePlacementTimer();
 
-            // Let the original method run by unblocking the prefix
-            isPlacingItem = false;
-            PlaceItem(itemStand, itemName, variant, quality);
-        }
-
-        private static void PlaceItem(ItemStand itemStand, string itemName, int variant, int quality)
-        {
-            // Temporarily allow original SetVisualItem by ignoring our prefix
+            // Temporarily allow the real "UseItem" to run
             ignorePrefix = true;
-
-            MethodInfo method = typeof(ItemStand).GetMethod("SetVisualItem", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-            if (method != null)
+            try
             {
-                method.Invoke(itemStand, new object[] { itemName, variant, quality });
-
-                MethodInfo updateVisual = typeof(ItemStand).GetMethod("UpdateVisual", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                if (updateVisual != null)
+                MethodInfo originalUseItem = AccessTools.Method(typeof(ItemStand), nameof(ItemStand.UseItem));
+                if (originalUseItem != null)
                 {
-                    updateVisual.Invoke(itemStand, null);
-                    DebugLogger.LogMessage("[MagicMod] ✅ Forced UpdateVisual to ensure correct item appearance.");
+                    // This calls the real UseItem so the item is finally attached
+                    originalUseItem.Invoke(stand, new object[] { user, item });
                 }
             }
-
-            ignorePrefix = false;
-
-            ItemStandTimer.HidePlacementTimer();
+            finally
+            {
+                ignorePrefix = false;
+                isInDelayedUse = false;
+            }
         }
     }
 }
