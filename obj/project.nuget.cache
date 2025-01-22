@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "EftEpv9XEuUKyztBm0iDl4lNuYtGpZSJGaMHMxhguzyKXnDP0KCx7uQeIY3lHQv4OAKWUB/u/OaKo5YhVd4Gbw==",
+  "success": true,
+  "projectFilePath": "/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod.csproj",
+  "expectedPackageFiles": [
+    "/Users/clundervold/.nuget/packages/netstandard.library.ref/2.1.0/netstandard.library.ref.2.1.0.nupkg.sha512"
+  ],
+  "logs": []
+}

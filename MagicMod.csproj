@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+
+<ItemGroup>
+  <Reference Include="0Harmony">
+    <HintPath>..\Lib\0Harmony.dll</HintPath>
+  </Reference>
+  <Reference Include="assembly_valheim">
+    <HintPath>..\Lib\assembly_valheim.dll</HintPath>
+  </Reference>
+  <Reference Include="BepInEx">
+    <HintPath>..\Lib\BepInEx.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine.CoreModule">
+    <HintPath>..\Lib\UnityEngine.CoreModule.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine">
+    <HintPath>..\Lib\UnityEngine.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine.UI">
+    <HintPath>..\Lib\UnityEngine.UI.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine.TextRenderingModule">
+    <HintPath>..\Lib\UnityEngine.TextRenderingModule.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine.UIModule">
+    <HintPath>..\Lib\UnityEngine.UIModule.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine.InputLegacyModule">
+    <HintPath>..\Lib\UnityEngine.InputLegacyModule.dll</HintPath>
+  </Reference>
+</ItemGroup>
+
+</Project>
