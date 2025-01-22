@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+<ItemGroup>
+  <Reference Include="0Harmony">
+    <HintPath>..\Lib\0Harmony.dll</HintPath>
+  </Reference>
+  <Reference Include="assembly_valheim">
+    <HintPath>..\Lib\assembly_valheim.dll</HintPath>
+  </Reference>
+  <Reference Include="BepInEx">
+    <HintPath>..\Lib\BepInEx.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine.CoreModule">
+    <HintPath>..\Lib\UnityEngine.CoreModule.dll</HintPath>
+  </Reference>
+  <Reference Include="UnityEngine">
+    <HintPath>..\Lib\UnityEngine.dll</HintPath>
+  </Reference>
+</ItemGroup>
+
+</Project>
