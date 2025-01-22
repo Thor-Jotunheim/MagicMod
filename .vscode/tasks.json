@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and Copy MagicMod (Windows)",
+            "type": "shell",
+            "command": "dotnet build \"C:/Users/CalLu/OneDrive/Documents/Jotunheim/Mod Dev/MagicMod/MagicMod.csproj\" && cp \"C:/Users/CalLu/OneDrive/Documents/Jotunheim/Mod Dev/MagicMod/bin/Debug/netstandard2.1/MagicMod.dll\" \"C:/Program Files (x86)/Steam/steamapps/common/Valheim/BepInEx/plugins\"",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build and Copy MagicMod (macOS)",
+            "type": "shell",
+            "command": "dotnet build \"/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/MagicMod.csproj\" && cp \"/Users/clundervold/Library/Mobile Documents/com~apple~CloudDocs/Valheim/Jotunheim/Dev/Mod/MagicMod/bin/Debug/netstandard2.1/MagicMod.dll\" \"$HOME/Library/Application Support/Steam/steamapps/common/Valheim/BepInEx/plugins/\" && rm \"$HOME/Library/Application Support/Steam/steamapps/common/Valheim/BepInEx/plugins/MagicModDebug.log\" && open -a Jotunheim.app",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
