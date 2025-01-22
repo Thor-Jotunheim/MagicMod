@@ -8,7 +8,7 @@ namespace MagicMod
     /*
       -----------------------------------------------------------
       PATCH #1: Suppress "You can't use X" messages via Humanoid patches.
-                We patch all known Humanoid.Message(...) overloads.
+                We patch all known Humanoid.Message(...) overloads. !WHY WONT YOU WORK!
       -----------------------------------------------------------
     */
     public static class HumanoidMessagePatches
