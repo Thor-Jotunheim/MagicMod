@@ -66,9 +66,7 @@ namespace MagicMod
 
             RectTransform textRect = textObj.GetComponent<RectTransform>();
             textRect.sizeDelta = new Vector2(200, 30);
-            textRect.anchoredPosition = new Vector2(0, 10);
-
-            // We have removed the progress bar entirely. No bar code here.
+            textRect.anchoredPosition = new Vector2(0, 30);
 
             // Hide UI initially
             timerUI.SetActive(false);
